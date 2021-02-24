@@ -1,25 +1,28 @@
 
 // lines (layers)
-const settings = [{ color: '#4292C6', weight: 3, key: 'LTS1', zIndex: 1, title: 'Low Stress (LTS 1)', url: 'data/level_1.json' },
-                { color: '#9ECAE1', weight: 3, key: 'LTS2', zIndex: 2, title: 'Minor Stress (LTS 2)', url: 'data/level_2.json' },
-                { color: '#FDAE6B', weight: 3, key: 'LTS3', zIndex: 3, title: 'Moderate Stress (LTS 3)', url: 'data/level_3.json' },
-                { color: '#F16913', weight: 3, key: 'LTS4', zIndex: 4, title: 'High Stress (LTS 4)', url: 'data/level_4.json' }]
+const settings = [{ color: '#08519C', weight: 3, key: 'LTS1', zIndex: 1, title: 'Low Stress (LTS 1)', url: 'data/level_1.json', checked: true},
+{ color: '#4292C6', weight: 3, key: 'LTS2', zIndex: 2, title: 'Minor Stress (LTS 2)', url: 'data/level_2.json', checked: true},
+{ color: '#F16913', weight: 3, key: 'LTS3', zIndex: 3, title: 'Moderate Stress (LTS 3)', url: 'data/level_3.json', checked: true},
+{ color: '#A63603', weight: 3, key: 'LTS4', zIndex: 4, title: 'High Stress (LTS 4)', url: 'data/level_4.json', checked: true}]
 
 var lineWeight = 2
 if (!L.Browser.mobile) {
-    lineWeight = lineWeight + 1
+  lineWeight = lineWeight + 1
 }
-var lineOpacity = 0.5
-var lineHighOpacity = 0.8 //highligh opacity
+var lineOpacity = 0.6
+var lineHighOpacity = 0.9 //highligh opacity
+
+var layerGroup = new L.LayerGroup();
+var layers = {};  //dictionary of layers with keys from settings
 
 // Create variable to hold map element, give initial settings to map
 var centerCoord = [49.254667, -122.825015]
 if (L.Browser.mobile) {
-    // increase tolerance for tapping (it was hard to tap on line exactly), zoom out a bit, and remove zoom control
-    var myRenderer = L.canvas({ padding: 0.1, tolerance: 5 });
-    var map = L.map("map", { center: centerCoord, zoom: 11, renderer: myRenderer, zoomControl: false });
+  // increase tolerance for tapping (it was hard to tap on line exactly), zoom out a bit, and remove zoom control
+  var myRenderer = L.canvas({ padding: 0.1, tolerance: 5 });
+  var map = L.map("map", { center: centerCoord, zoom: 11, renderer: myRenderer, zoomControl: false });
 } else {
-    var map = L.map("map", { center: centerCoord, zoom: 12 });
+  var map = L.map("map", { center: centerCoord, zoom: 12 });
 }
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -36,136 +39,160 @@ addLegend()
 document.getElementById('legendbtn').onclick = function () { toggleDisplay(['legendbtn', 'legend']) };
 document.getElementById('closebtn').onclick = function () { toggleDisplay(['legendbtn', 'legend']) };
 
-var layerGroup = new L.LayerGroup();
 addStressLayers()
 
 ///// Functions ////
 
 // ------ Legend
-function addLegend () {
+function addLegend() {
   const legend = L.control({ position: 'topright' })
   legend.onAdd = function (map) {
-      const div = L.DomUtil.create('div')
-      let legendHtml = '<div id="legendbtn" class="fill-darken2 pad1 icon menu button fr" style="display: none"></div>' +
-          '<div id="legend" class="fill-darken1 round" style="display: block">' +
-          '<div id="closebtn" class="fill-darken2 pad1 icon close button fr"></div>' +
-          '<div class="clearfix"></div>' +
-          '<form><fieldset class="checkbox-pill clearfix">'
+    const div = L.DomUtil.create('div')
+    let legendHtml = '<div id="legendbtn" class="fill-darken2 pad1 icon menu button fr" style="display: none"></div>' +
+      '<div id="legend" class="fill-darken1 round" style="display: block">' +
+      '<div id="closebtn" class="fill-darken2 pad1 icon close button fr"></div>' +
+      '<div class="clearfix"></div>' +
+      '<form><fieldset class="checkbox-pill clearfix">'
 
-      for (let setting of settings) {
-          legendHtml += addLegendLine(setting)
-      }
-      legendHtml += '<div class="button quiet col12">Click on map for more info</div>'
+    legendHtml += '<div class="button quiet col12">Tri-Cities Cycling Traffic Stress</div>'
+    for (let setting of settings) {
+      legendHtml += addLegendLine(setting)
+    }
+    legendHtml += '<div class="button quiet col12">Click on map item for more info</div>'
 
-      legendHtml += '</fieldset></form></div>'
-      div.innerHTML = legendHtml
+    legendHtml += '</fieldset></form></div>'
+    div.innerHTML = legendHtml
 
-      // disable map zoom when double clicking anywhere on legend (checkboxes included)
-      div.addEventListener('mouseover', function () { map.doubleClickZoom.disable(); });
-      div.addEventListener('mouseout', function () { map.doubleClickZoom.enable(); });
-      return div
+    // disable map zoom when double clicking anywhere on legend (checkboxes included)
+    div.addEventListener('mouseover', function () { map.doubleClickZoom.disable(); });
+    div.addEventListener('mouseout', function () { map.doubleClickZoom.enable(); });
+    return div
   }
   legend.addTo(map)
 }
 
 function addLegendLine(setting) {
-  var spanHtml = '<span style="display:inline-block; width:50px; height:8px; background-color:' + setting.color +'"></span>' +
-      '&nbsp;' + setting.title
+  var spanHtml = '<span style="display:inline-block; width:50px; height:8px; background-color:' + setting.color + '"></span>' +
+    '&nbsp;' + setting.title
 
   checkedHtml = ""
-  if (setting.checked){
-      checkedHtml = 'checked'
+  if (setting.checked) {
+    checkedHtml = 'checked'
   }
-  var lineHtml = '<input type="checkbox" id="'+ setting.key +'" onclick="toggleLayer(this)" ' + checkedHtml + ' >' +
-      '<label for="'+ setting.key +'" id="'+ setting.key +'-label" class="button icon check quiet col12">' +
-      '&nbsp;' + spanHtml + ' </label>'
+  var lineHtml = '<input type="checkbox" id="' + setting.key + '" onclick="toggleLayer(this)" ' + checkedHtml + ' >' +
+    '<label for="' + setting.key + '" id="' + setting.key + '-label" class="button icon check quiet col12">' +
+    '&nbsp;' + spanHtml + ' </label>'
 
   return lineHtml
 }
 
 function toggleDisplay(elementIds) {
   elementIds.forEach(function (elementId) {
-      var x = document.getElementById(elementId);
-      if (x.style.display === "none") {
-          x.style.display = "block";
-      } else {
-          x.style.display = "none";
-      }
+    var x = document.getElementById(elementId);
+    if (x.style.display === "none") {
+      x.style.display = "block";
+    } else {
+      x.style.display = "none";
+    }
   });
+}
+
+function toggleLayer(checkbox) { 
+  var targetLayer = layers[checkbox.id]
+  if (targetLayer != null){
+    if (checkbox.checked){
+        layerGroup.addLayer(targetLayer);
+    }else{
+        layerGroup.removeLayer(targetLayer); 
+    }
+  }
 }
 
 // ------ Layers
 
-function addStressLayers () {
+function addStressLayers() {
   layerGroup.addTo(map);
-  // for (let setting of settings) {
-  //   addStressLayerToMap(setting)
-  //   //addStressLayerToMapLocal(setting)
-  // }
+  for (let setting of settings) {
+    var ltsLayer = new L.GeoJSON.AJAX(setting.url, {
+      style: getLineStyle(setting.color),
+      onEachFeature: onEachFeature,
+    });
+    ltsLayer.layerID = setting.key;
+    // add to global layers dictionary
+    layers[setting.key] = ltsLayer
+    // add to map if checked
+    if (setting.checked){
+      layerGroup.addLayer(ltsLayer);
+    }
+  }
 }
 
 // lines style
-var topGapStyle = {
-  "color": settings[0].color,
-  "weight": lineWeight,
-  "opacity": 0.5
-};
-var topGapStyleHighlight = {
-  "color": settings[0].color,
-  "weight": lineWeight+1,
-  "opacity": 0.8
-};
+function getLineStyle(color) {
+  var lineStyle = {
+    "color": color,
+    "weight": lineWeight,
+    "opacity": lineOpacity
+  };
+  return lineStyle
+}
+function getHighlightStyle(color) {
+  var highlighStyle = {
+    "color": color,
+    "weight": lineWeight + 1,
+    "opacity": lineHighOpacity
+  };
+  return highlighStyle
+}
 
 function highlightFeature(e) {
   var layer = e.target;
-
-  layer.setStyle(topGapStyleHighlight);
+  var highlightStyle = getHighlightStyle(layer.options.color)
+  layer.setStyle(highlightStyle);
 
   if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-      layer.bringToFront();
+    layer.bringToFront();
   }
 }
+
 function resetHighlight(e) {
-  topGapLayer.resetStyle(e.target);
+  var layer = e.target;
+  var lineStyle = getLineStyle(layer.options.color)
+  layer.setStyle(lineStyle);
 }
 
 // add popup and highlight
 function onEachFeature(feature, layer) {
   var popupContent = ""
   if (feature.properties) {
-      if (feature.properties.id) {
-          popupContent += "<b>Id: </b>";
-          popupContent += feature.properties.id;
-      }
-      if (feature.properties.decisionMsg) {
-          popupContent += "<br><b>Decision Msg: </b>";
-          popupContent += feature.properties.decisionMsg;
-      }
+    if (feature.properties.id) {
+      popupContent +='<b><a href="https://www.openstreetmap.org/' + feature.properties.id + '" target="_blank">' + feature.properties.id + '</a></b><hr>'
+      //popupContent += "<b>Id: </b>";
+      //popupContent += feature.properties.id;
+    }
+    if (feature.properties.decisionMsg) {
+      popupContent += "<br><b>Decision Msg: </b>";
+      popupContent += feature.properties.decisionMsg;
+    }
   }
   layer.bindPopup(popupContent);
 
   // for mobile, use popup functions
   if (L.Browser.mobile) {
     layer.on({
-        popupopen: highlightFeature,
-        popupclose: resetHighlight,
+      popupopen: highlightFeature,
+      popupclose: resetHighlight,
     });
-  }else{
+  } else {
     layer.on({
       mouseover: highlightFeature,
       mouseout: resetHighlight,
-  });
+    });
   }
 }
 
-var topGapLayer = new L.GeoJSON.AJAX("data/level_1.json", {
-  style: topGapStyle,
-  onEachFeature: onEachFeature,
-});
-layerGroup.addLayer(topGapLayer);
-
 // function addStressLayerToMapLocal (setting) {
-  
+
 //   var data
 //   if (setting.zIndex == 1){
 //     data = level1
