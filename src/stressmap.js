@@ -16,7 +16,7 @@ var layerGroup = new L.LayerGroup();
 var layers = {};  //dictionary of layers with keys from settings
 
 // Create variable to hold map element, give initial settings to map
-var centerCoord = [49.254667, -122.825015]
+var centerCoord = [49.27857, -122.79942] 
 if (L.Browser.mobile) {
   // increase tolerance for tapping (it was hard to tap on line exactly), zoom out a bit, and remove zoom control
   var myRenderer = L.canvas({ padding: 0.1, tolerance: 5 });
@@ -170,8 +170,19 @@ function onEachFeature(feature, layer) {
       //popupContent += "<b>Id: </b>";
       //popupContent += feature.properties.id;
     }
+    if (feature.properties.highway) {
+      popupContent += "<b>category: </b>";
+      popupContent += feature.properties.highway;
+    }
+    for (let property in feature.properties) {
+      //console.log('Dragana:: tag ' + JSON.stringify(tag) +', value: '+ way.tags[tag])
+      if ((property !== "id") && (property !== "decisionMsg") && (property !== "highway") && (feature.properties[property] != null)){
+        popupContent += "<br><b>" + property + ": </b>";
+        popupContent += feature.properties[property];
+      }
+    }
     if (feature.properties.decisionMsg) {
-      popupContent += "<br><b>Decision Msg: </b>";
+      popupContent += "<br><br><b>Decision Msg: </b>";
       popupContent += feature.properties.decisionMsg;
     }
   }
